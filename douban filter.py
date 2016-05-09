@@ -39,6 +39,13 @@ class BlackFilter(object):
 					f.write("\n")
 				f.write(item)
 
+class KeyWordFilter(BlackFilter):
+	def contain(self, item):
+		for black in self.black_list:
+			if black in item:
+				return True
+		return False
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer,encoding='utf8') #改变标准输出的默认编码
 
 cur_page_no = 1
@@ -55,7 +62,7 @@ req.add_header('Cookie', 'bid="tPUrC0sGWyU"; ll="108288"; _ga=GA1.2.273173056.14
 url_content = urllib.request.urlopen(req).read().decode("utf-8", "ignore")
 
 url_filter = BlackFilter("black_list.txt")
-title_filter = BlackFilter("black_title_list.txt")
+key_word_filter = KeyWordFilter("title_key_word.txt")
 
 url_list = []
 topic_list = []
@@ -68,17 +75,21 @@ table = ElementTree.XML(table_content)
 for tr in table[0]:
 	topic_url = tr[0][0].attrib["href"]
 	title = tr[0][0].attrib["title"]
-	reply = tr[1].text
+	reply = int(tr[1].text[0:tr[1].text.index("回应")])
 	group = tr[3][0].text
 	topic = Topic(topic_url, title, reply, group)
-	if url_filter.contain(topic_url):
+	if reply > 50:
+		print("reply =",reply,"in",title)
 		continue
-	if title_filter.contain(title):
+	if key_word_filter.contain(title):
+		print("found key word in",title)
+		continue
+	if url_filter.contain(topic_url):
 		continue
 	print("============================")
 	print(topic.title)
 	print(topic.url)
-	print(topic.reply)
+	print(topic.reply,"回应")
 	print(topic.group)
 	print("============================")
 	print("pass it and add check it later: y")
@@ -89,11 +100,8 @@ for tr in table[0]:
 		if topic_url not in url_list:
 			url_list.append(topic_url)
 			topic_list.append(topic)
-		print("saved-->",topic_url)
 	elif choose == "n":
 		url_filter.append(topic_url)
-		title_filter.append(title)
-		print("ignore-->",topic_url)
 	elif choose == "q":
 		is_quit = True
 		break
@@ -102,6 +110,5 @@ for tr in table[0]:
 	print("")
 
 url_filter.save()
-title_filter.save()
 
 print("end program")
