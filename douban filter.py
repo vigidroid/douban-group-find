@@ -3,13 +3,15 @@ import io
 import sys
 import time
 import urllib.request
+import logging
 from xml.etree import ElementTree
 
 class Topic(object):
-	def __init__(self, url, title, reply, group):
+	def __init__(self, url, title, reply, time, group):
 		self.url = url
 		self.title = title
 		self.reply = reply
+		self.update_time = time
 		self.group = group
 		self.user_name = None
 		self.user_url = None
@@ -89,8 +91,9 @@ class TopicProvider(object):
 			topic_url = tr[0][0].attrib["href"]
 			title = tr[0][0].attrib["title"]
 			reply = int(tr[1].text[0:tr[1].text.index("回应")])
+			time = tr[2].attrib["title"]
 			group = tr[3][0].text
-			topic_list.append(Topic(topic_url, title, reply, group))
+			topic_list.append(Topic(topic_url, title, reply, time, group))
 		return topic_list
 	def fetchDetail(self, topic):
 		url_content = NetWordUtil.request(topic.url)
@@ -110,10 +113,10 @@ class TopicProvider(object):
 		topic.topic_content = url_content[content_m:content_n]
 		return topic
 	def filter(self, topic):
-		if topic.reply > 30:
+		if topic.reply > 50:
 #			print("topic.reply =",topic.reply,"in",topic.title)
 			return False
-		if '望京' not in topic.title:
+		if '安贞' not in topic.title:
 			return False
 		if self.title_key_word_filter.contain(topic.title):
 #			print("found key word in",topic.title)
@@ -121,7 +124,11 @@ class TopicProvider(object):
 		if self.url_filter.contain(topic.url):
 #			print("found black url",topic.url)
 			return False
-		topic = self.fetchDetail(topic)
+		try:
+			topic = self.fetchDetail(topic)
+		except Exception as e:
+			print("strange topic",topic.url)
+			return True
 		if self.user_filter.contain(topic.user_url):
 #			print("found black user",topic.user_name,"in",topic.url)
 			return False
@@ -130,7 +137,7 @@ class TopicProvider(object):
 			return False
 		return True
 	def provide(self):
-		cur_page_no = 0
+		cur_page_no = 15
 		while cur_page_no < 500:
 			# find in cache queue
 			while len(self.queue):
@@ -146,20 +153,25 @@ class TopicProvider(object):
 		return None
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer,encoding='utf8') #改变标准输出的默认编码
-
 url_list = []
 provider = TopicProvider()
 is_quit = False
 while not is_quit:
-	topic = provider.provide()
+	try:
+		topic = provider.provide()
+	except Exception as e:
+		logging.exception(e)
+		break
 	if topic is None:
 		is_quit = True
 		print("no data .....")
+		break
 	print("============================")
 	print(topic.title)
 	print(topic.url)
 	print("用户名：",topic.user_name)
 	print("提交时间：",topic.submit_time," ",topic.reply,"回应")
+	print("更新时间：",topic.update_time)
 	print(topic.group)
 	print("============================")
 	print("pass it and check it later: y")
