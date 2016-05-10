@@ -1,6 +1,7 @@
 import re
 import io
 import sys
+import time
 import urllib.request
 from xml.etree import ElementTree
 
@@ -10,9 +11,18 @@ class Topic(object):
 		self.title = title
 		self.reply = reply
 		self.group = group
+		self.user_name = None
+		self.user_url = None
+		self.submit_time = None
+		self.topic_content = None
 
 class NetWordUtil(object):
+	net_work_time = 0
 	def request(url):
+		NetWordUtil.net_work_time += 1
+		if NetWordUtil.net_work_time > 5:
+			time.sleep(2)
+			NetWordUtil.net_work_time = 0
 		req = urllib.request.Request(url)
 		req.add_header('User-Agent', "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.94 Safari/537.36")
 		req.add_header('Host', "www.douban.com")
@@ -55,30 +65,23 @@ class KeyWordFilter(BlackFilter):
 				return True
 		return False
 
-class BlackUserFilter(BlackFilter):
-	def contain(self, url):
-		url_content = NetWordUtil.request(url)
-		m = url_content.index("<span class=\"from\">")
-		n = url_content.index("</span>", m)
-		span_content = url_content[m:n+7]
-		span = ElementTree.XML(span_content)
-		return span[0].attrib['href'] in self.black_list
-
 class TopicProvider(object):
 	def __init__(self):
 		self.url_filter = BlackFilter("black_url_list.txt")
-		self.key_word_filter = KeyWordFilter("title_key_word.txt")
-		self.user_filter = BlackUserFilter("black_user_list.txt")
+		self.title_key_word_filter = KeyWordFilter("title_key_word.txt")
+		self.user_filter = BlackFilter("black_user_list.txt")
+		self.content_key_word_filter = KeyWordFilter("content_key_word.txt")
 		self.queue = []
 		pass
 	def findInCloud(self, page_no):
 		print("loading... at page " + str(page_no))
+		sys.stdout.flush()
 		topic_list = []
 		group_url = 'https://www.douban.com/group/'
 		if page_no > 1:
 			group_url = group_url + "?start=" + str(50 * (page_no - 1))
 		url_content = NetWordUtil.request(group_url)
-		m = url_content.index("<table class=\"olt\">")
+		m = url_content.index('<table class="olt">')
 		n = url_content.index("</table>", m)
 		table_content = url_content[m:n+8]
 		table = ElementTree.XML(table_content)
@@ -89,35 +92,58 @@ class TopicProvider(object):
 			group = tr[3][0].text
 			topic_list.append(Topic(topic_url, title, reply, group))
 		return topic_list
-	def filter(self, list):
-		temp_list = []
-		for item in list:
-			if item.reply > 3:
-#				print("item.reply =",item.reply,"in",item.title)
-				continue
-			if self.key_word_filter.contain(item.title):
-				print("found key word in",item.title)
-				continue
-			if self.user_filter.contain(item.url):
-				print("found black user in",item.url)
-				continue
-			if self.url_filter.contain(item.url):
-				print("found black url",item.url)
-				continue
-			temp_list.append(item)
-		return temp_list
+	def fetchDetail(self, topic):
+		url_content = NetWordUtil.request(topic.url)
+		user_m = url_content.index('<span class="from">')
+		user_n = url_content.index("</span>", user_m)
+		user_content = url_content[user_m:user_n+7]
+		user_span = ElementTree.XML(user_content)
+		topic.user_name = user_span[0].text
+		topic.user_url = user_span[0].attrib['href']
+		time_m = url_content.index('<span class="color-green">', user_n)
+		time_n = url_content.index('</span>', time_m)
+		time_content = url_content[time_m:time_n+7]
+		time_span = ElementTree.XML(time_content)
+		topic.submit_time = time_span.text
+		content_m = url_content.index('<div class="topic-content">')
+		content_n = url_content.index('<div class="topic-opt clearfix">')
+		topic.topic_content = url_content[content_m:content_n]
+		return topic
+	def filter(self, topic):
+		if topic.reply > 30:
+#			print("topic.reply =",topic.reply,"in",topic.title)
+			return False
+		if '望京' not in topic.title:
+			return False
+		if self.title_key_word_filter.contain(topic.title):
+#			print("found key word in",topic.title)
+			return False
+		if self.url_filter.contain(topic.url):
+#			print("found black url",topic.url)
+			return False
+		topic = self.fetchDetail(topic)
+		if self.user_filter.contain(topic.user_url):
+#			print("found black user",topic.user_name,"in",topic.url)
+			return False
+		if self.content_key_word_filter.contain(topic.topic_content):
+#			print("found key word in",topic.url)
+			return False
+		return True
 	def provide(self):
-		if not len(self.queue):
-			cur_page_no = 1
-			while cur_page_no < 100:
-				temp_list = self.filter(self.findInCloud(cur_page_no))
-				if not len(temp_list):
-					cur_page_no += 1
-					continue
-				self.queue.extend(temp_list)
-				break
-		if len(self.queue):
-			return self.queue.pop(0)
+		cur_page_no = 0
+		while cur_page_no < 500:
+			# find in cache queue
+			while len(self.queue):
+				topic = self.queue.pop(0)
+				if self.filter(topic):
+					return topic
+			# find in cloud
+			cur_page_no += 1
+			temp_list = self.findInCloud(cur_page_no)
+			if not len(temp_list):
+				return None
+			self.queue.extend(temp_list)
+		return None
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer,encoding='utf8') #改变标准输出的默认编码
 
@@ -132,7 +158,8 @@ while not is_quit:
 	print("============================")
 	print(topic.title)
 	print(topic.url)
-	print(topic.reply,"回应")
+	print("用户名：",topic.user_name)
+	print("提交时间：",topic.submit_time," ",topic.reply,"回应")
 	print(topic.group)
 	print("============================")
 	print("pass it and check it later: y")
