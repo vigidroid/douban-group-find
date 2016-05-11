@@ -113,11 +113,21 @@ class TopicProvider(object):
 		topic.topic_content = url_content[content_m:content_n]
 		return topic
 	def filter(self, topic):
+		white_word_list = [ '望京', '花家地', '金台路', '甜水园', '太阳宫', '三元桥',
+							'安贞', '酒仙桥', '大山子', '西坝', '水锥子', '红庙'
+							'首开知语城', '大西洋新城', '南湖', '芍药居', '团结湖'
+							'青年路', '十里堡', '望花路', '延静', '和平西桥', '道家园'
+							'静安', '新源里']
+		is_match = False
+
 		if topic.reply > 50:
 #			print("topic.reply =",topic.reply,"in",topic.title)
 			return False
-		if '安贞' not in topic.title:
-			return False
+#		for white in white_word_list:
+#			if white in topic.title:
+#				is_match = True
+#		if not is_match:
+#			return False
 		if self.title_key_word_filter.contain(topic.title):
 #			print("found key word in",topic.title)
 			return False
@@ -137,7 +147,7 @@ class TopicProvider(object):
 			return False
 		return True
 	def provide(self):
-		cur_page_no = 15
+		cur_page_no = 0
 		while cur_page_no < 500:
 			# find in cache queue
 			while len(self.queue):
