@@ -116,20 +116,18 @@ class TopicProvider(object):
 		white_word_list = [ '望京', '花家地', '金台路', '甜水园', '太阳宫', '三元桥',
 							'安贞', '酒仙桥', '大山子', '西坝', '水锥子', '红庙'
 							'首开知语城', '大西洋新城', '南湖', '芍药居', '团结湖'
-							'青年路', '十里堡', '望花路', '延静', '和平西桥', '道家园'
-							'静安', '新源里']
+							'十里堡', '望花路', '延静', '和平', '道家园', '青年路'
+							'静安', '新源里', '八里庄', '松榆东里', '东风北桥', '将台'
+							'阜通']
 		is_match = False
 
-		if topic.reply > 50:
+		if topic.reply > 10:
 #			print("topic.reply =",topic.reply,"in",topic.title)
 			return False
-#		for white in white_word_list:
-#			if white in topic.title:
-#				is_match = True
-#		if not is_match:
-#			return False
 		if self.title_key_word_filter.contain(topic.title):
 #			print("found key word in",topic.title)
+			return False
+		if self.content_key_word_filter.contain(topic.title):
 			return False
 		if self.url_filter.contain(topic.url):
 #			print("found black url",topic.url)
@@ -144,6 +142,15 @@ class TopicProvider(object):
 			return False
 		if self.content_key_word_filter.contain(topic.topic_content):
 #			print("found key word in",topic.url)
+			return False
+		for white in white_word_list:
+			if white in topic.title:
+				is_match = True
+				break
+			if white in topic.topic_content:
+				is_match = True
+				break
+		if not is_match:
 			return False
 		return True
 	def provide(self):
