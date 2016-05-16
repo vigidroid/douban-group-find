@@ -122,7 +122,7 @@ class TopicProvider(object):
 							'惠新西街', '光熙门']
 		is_match = False
 
-		if topic.reply > 10:
+		if topic.reply > 15:
 #			print("topic.reply =",topic.reply,"in",topic.title)
 			return False
 		if self.title_key_word_filter.contain(topic.title):
