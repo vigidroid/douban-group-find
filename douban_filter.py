@@ -6,6 +6,16 @@ import urllib.request
 import logging
 from xml.etree import ElementTree
 
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer,encoding='utf8') #改变标准输出的默认编码
+
+COOKIE_STR = ""
+try:
+	with open("把cookie拷贝到这个文件里.txt", "r", encoding="utf-8") as f:
+		COOKIE_STR = f.read()
+except Exception as e:
+	print("读取文件错误 -->","把cookie拷贝到这个文件里.txt")
+	exit()
+
 class Topic(object):
 	def __init__(self, url, title, reply, time, group):
 		self.url = url
@@ -31,7 +41,7 @@ class NetWordUtil(object):
 		req.add_header('Scheme', "https")
 		req.add_header('Version', "HTTP/1.1")
 		req.add_header('Referer', url)
-		req.add_header('Cookie', 'bid="tPUrC0sGWyU"; ll="108288"; _ga=GA1.2.273173056.1453032179; ps=y; ue="Vigi0303@163.com"; dbcl2="60652504:BGlb29Fu1J4"; ct=y; ck=s53H; ap=1; push_noty_num=0; push_doumail_num=0; _pk_ref.100001.8cb4=%5B%22%22%2C%22%22%2C1462631780%2C%22https%3A%2F%2Fwww.google.com%2F%22%5D; _pk_id.100001.8cb4=ccab1e82873542ba.1453124943.36.1462631780.1462615040.; _pk_ses.100001.8cb4=*; __utmt=1; __utma=30149280.273173056.1453032179.1462614717.1462631781.90; __utmb=30149280.2.10.1462631781; __utmc=30149280; __utmz=30149280.1462614717.89.50.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); __utmv=30149280.6065')
+		req.add_header('Cookie', COOKIE_STR)
 		url_content = urllib.request.urlopen(req).read().decode("utf-8", "ignore")
 		return url_content
 
@@ -170,7 +180,6 @@ class TopicProvider(object):
 			self.queue.extend(temp_list)
 		return None
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer,encoding='utf8') #改变标准输出的默认编码
 url_list = []
 provider = TopicProvider()
 is_quit = False
