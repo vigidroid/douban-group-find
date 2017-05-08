@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 import re
 import io
 import sys
@@ -82,7 +84,7 @@ class TopicProvider(object):
 		self.url_filter = BlackFilter("black_url_list.txt")
 		self.title_key_word_filter = KeyWordFilter("title_key_word.txt")
 		self.user_filter = BlackFilter("black_user_list.txt")
-		self.content_key_word_filter = KeyWordFilter("content_key_word.txt")
+		self.content_key_word_filter = KeyWordFilter("content_black_word.txt")
 		self.queue = []
 		pass
 	def findInCloud(self, page_no):
@@ -130,9 +132,9 @@ class TopicProvider(object):
 							'静安', '新源里', '八里庄', '松榆东里', '东风北桥', '将台'
 							'阜通', '大望路', '光辉里', '红北', '延东', '北土城'
 							'惠新西街', '光熙门']
-		is_match = False
+		is_match = True     # True to disable white word list
 
-		if topic.reply > 15:
+		if topic.reply > 50:
 #			print("topic.reply =",topic.reply,"in",topic.title)
 			return False
 		if self.title_key_word_filter.contain(topic.title):
@@ -166,12 +168,14 @@ class TopicProvider(object):
 		return True
 	def provide(self):
 		cur_page_no = 0
-		while cur_page_no < 500:
+		while cur_page_no < 50:
 			# find in cache queue
 			while len(self.queue):
 				topic = self.queue.pop(0)
 				if self.filter(topic):
 					return topic
+				else:
+					print("skip ",topic.url)
 			# find in cloud
 			cur_page_no += 1
 			temp_list = self.findInCloud(cur_page_no)
@@ -203,6 +207,7 @@ while not is_quit:
 	print("============================")
 	print("pass it and check it later: y")
 	print("pass it and add to black list: n")
+	print("pass it and block all topic by this user: u")
 	print("quit program and save: q")
 	choose = input("enter your choose: ")
 	if choose == "y":
@@ -210,6 +215,8 @@ while not is_quit:
 			url_list.append(topic.url)
 	elif choose == "n":
 		provider.url_filter.append(topic.url)
+	elif choose == "u":
+		provider.user_filter.append(topic.user_url)
 	elif choose == "q":
 		is_quit = True
 	else:
@@ -217,5 +224,6 @@ while not is_quit:
 	print("")
 
 provider.url_filter.save()
+provider.user_filter.save()
 
 print("end program")
