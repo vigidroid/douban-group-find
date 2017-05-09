@@ -125,14 +125,9 @@ class TopicProvider(object):
 		topic.topic_content = url_content[content_m:content_n]
 		return topic
 	def filter(self, topic):
-		white_word_list = [ '望京', '花家地', '金台路', '甜水园', '太阳宫', '三元桥',
-							'安贞', '酒仙桥', '大山子', '西坝', '水碓子', '红庙'
-							'首开知语城', '大西洋新城', '南湖', '芍药居', '团结湖'
-							'十里堡', '望花路', '延静', '和平', '道家园', '青年路'
-							'静安', '新源里', '八里庄', '松榆东里', '东风北桥', '将台'
-							'阜通', '大望路', '光辉里', '红北', '延东', '北土城'
-							'惠新西街', '光熙门']
-		is_match = True     # True to disable white word list
+		white_word_list = [ '褡裢坡', '黄渠', '常营', '金台路', '十里堡', '青年路',
+							'朝阳大悦城', '6号线', '六号线']
+		is_match = False     # True to disable white word list
 
 		if topic.reply > 50:
 #			print("topic.reply =",topic.reply,"in",topic.title)
