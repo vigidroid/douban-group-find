@@ -37,6 +37,10 @@ class NetWordUtil(object):
 		if NetWordUtil.net_work_time > 5:
 			time.sleep(2)
 			NetWordUtil.net_work_time = 0
+		proxy = "http://127.0.0.1:1080"
+		proxy_support = urllib.request.ProxyHandler({'http': proxy})
+		opener = urllib.request.build_opener(proxy_support)
+		urllib.request.install_opener(opener)
 		req = urllib.request.Request(url)
 		req.add_header('User-Agent', "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.94 Safari/537.36")
 		req.add_header('Host', "www.douban.com")
@@ -128,8 +132,7 @@ class TopicProvider(object):
 		white_word_list = [ '褡裢坡', '黄渠', '常营', '金台路', '十里堡', '青年路',
 							'朝阳大悦城', '6号线', '六号线',
 							'定福', '福盈', '泰福苑', '福怡苑', '甘露园', '金隅汇星苑',
-							'康家园', '慈云寺',
-							'望京']
+							'康家园', '慈云寺']
 		is_match = False     # True to disable white word list
 
 		if topic.reply > 10:
