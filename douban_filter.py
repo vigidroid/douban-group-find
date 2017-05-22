@@ -89,7 +89,8 @@ class TopicProvider(object):
 		self.title_key_word_filter = KeyWordFilter("title_key_word.txt")
 		self.user_filter = BlackFilter("black_user_list.txt")
 		self.content_key_word_filter = KeyWordFilter("content_black_word.txt")
-		self.queue = []
+		self.queue = []   # 缓存一页的topic
+		self.passedQueue = []    # 缓存已经被排除过的topic，可以避免多余的fetch detail操作
 		pass
 	def findInCloud(self, page_no):
 		print("loading... at page " + str(page_no))
@@ -173,9 +174,12 @@ class TopicProvider(object):
 			# find in cache queue
 			while len(self.queue):
 				topic = self.queue.pop(0)
-				if self.filter(topic):
+				if topic.url in self.passedQueue:
+					print("pass ",topic.url)
+				elif self.filter(topic):
 					return topic
 				else:
+					self.passedQueue.append(topic.url)
 					print("skip ",topic.url)
 			# find in cloud
 			cur_page_no += 1
