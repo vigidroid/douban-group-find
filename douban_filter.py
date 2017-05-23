@@ -34,7 +34,7 @@ class NetWordUtil(object):
 	net_work_time = 0
 	def request(url):
 		NetWordUtil.net_work_time += 1
-		if NetWordUtil.net_work_time > 5:
+		if NetWordUtil.net_work_time > 4:
 			time.sleep(2)
 			NetWordUtil.net_work_time = 0
 		proxy = "http://127.0.0.1:1080"
