@@ -133,10 +133,11 @@ class TopicProvider(object):
 		white_word_list = [ '褡裢坡', '黄渠', '常营', '金台路', '十里堡', '青年路',
 							'朝阳大悦城', '6号线', '六号线',
 							'定福', '福盈', '泰福苑', '福怡苑', '甘露园', '金隅汇星苑',
-							'康家园', '慈云寺']
+							'康家园', '慈云寺',
+							'望京']
 		is_match = False     # True to disable white word list
 
-		if topic.reply > 10:
+		if topic.reply > 3:
 #			print("topic.reply =",topic.reply,"in",topic.title)
 			return False
 		if self.title_key_word_filter.contain(topic.title):
