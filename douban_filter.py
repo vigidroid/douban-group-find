@@ -120,7 +120,7 @@ class TopicProvider(object):
 		user_span = ElementTree.XML(user_content)
 		topic.user_name = user_span[0].text
 		topic.user_url = user_span[0].attrib['href']
-		time_m = url_content.index('<span class="color-green">', user_n)
+		time_m = url_content.index('<span class="create-time', user_n)
 		time_n = url_content.index('</span>', time_m)
 		time_content = url_content[time_m:time_n+7]
 		time_span = ElementTree.XML(time_content)
@@ -130,14 +130,14 @@ class TopicProvider(object):
 		topic.topic_content = url_content[content_m:content_n]
 		return topic
 	def filter(self, topic):
-		white_word_list = [ '褡裢坡', '黄渠', '常营', '金台路', '十里堡', '青年路',
-							'朝阳大悦城', '6号线', '六号线',
-							'定福', '福盈', '泰福苑', '福怡苑', '甘露园', '金隅汇星苑',
-							'康家园', '慈云寺',
-							'望京']
+		white_word_list = [ '望京', '花家地', '太阳宫', '安贞', '芍药居'
+							'惠新西街', '北土城', '央美', '酒仙桥', '阜通'
+							'10号线', '十号线', '和平西桥', '大西洋']
 		is_match = False     # True to disable white word list
 
-		if topic.reply > 3:
+		if topic.url in url_list:
+			return False
+		if topic.reply > 10:
 #			print("topic.reply =",topic.reply,"in",topic.title)
 			return False
 		if self.title_key_word_filter.contain(topic.title):
@@ -211,12 +211,12 @@ while not is_quit:
 	print("更新时间：",topic.update_time)
 	print(topic.group)
 	print("============================")
-	print("pass it and check it later: y")
-	print("pass it and add to black list: n")
-	print("pass it and block all topic by this user: u")
+	print("skip it(only skip in this session): s")
+	print("never see this thread again: n")
+	print("block all topic by this user: u")
 	print("quit program and save: q")
 	choose = input("enter your choose: ")
-	if choose == "y":
+	if choose == "s":
 		if topic.url not in url_list:
 			url_list.append(topic.url)
 	elif choose == "n":
