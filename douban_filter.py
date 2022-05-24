@@ -48,8 +48,10 @@ class NetWordUtil(object):
 		req.add_header('Version', "HTTP/1.1")
 		req.add_header('Referer', url)
 		req.add_header('Cookie', COOKIE_STR)
-		url_content = urllib.request.urlopen(req).read().decode("utf-8", "ignore")
-		return url_content
+		res = urllib.request.urlopen(req)
+		code = res.status
+		url_content = res.read().decode("utf-8", "ignore")
+		return code, url_content
 
 class BlackFilter(object):
 	def __init__(self, file_name):
@@ -86,9 +88,8 @@ class KeyWordFilter(BlackFilter):
 class TopicProvider(object):
 	def __init__(self):
 		self.url_filter = BlackFilter("black_url_list.txt")
-		self.title_key_word_filter = KeyWordFilter("title_key_word.txt")
 		self.user_filter = BlackFilter("black_user_list.txt")
-		self.content_key_word_filter = KeyWordFilter("content_black_word.txt")
+		self.black_word_filter = KeyWordFilter("black_word.txt")
 		self.queue = []   # 缓存一页的topic
 		self.passedQueue = []    # 缓存已经被排除过的topic，可以避免多余的fetch detail操作
 		pass
@@ -99,7 +100,7 @@ class TopicProvider(object):
 		group_url = 'https://www.douban.com/group/'
 		if page_no > 1:
 			group_url = group_url + "?start=" + str(50 * (page_no - 1))
-		url_content = NetWordUtil.request(group_url)
+		code, url_content = NetWordUtil.request(group_url)
 		m = url_content.index('<table class="olt">')
 		n = url_content.index("</table>", m)
 		table_content = url_content[m:n+8]
@@ -113,7 +114,8 @@ class TopicProvider(object):
 			topic_list.append(Topic(topic_url, title, reply, time, group))
 		return topic_list
 	def fetchDetail(self, topic):
-		url_content = NetWordUtil.request(topic.url)
+		code, url_content = NetWordUtil.request(topic.url)
+		if code != 200: return None
 		user_m = url_content.index('<span class="from">')
 		user_n = url_content.index("</span>", user_m)
 		user_content = url_content[user_m:user_n+7]
@@ -140,10 +142,7 @@ class TopicProvider(object):
 		if topic.reply > 10:
 #			print("topic.reply =",topic.reply,"in",topic.title)
 			return False
-		if self.title_key_word_filter.contain(topic.title):
-#			print("found key word in",topic.title)
-			return False
-		if self.content_key_word_filter.contain(topic.title):
+		if self.black_word_filter.contain(topic.title):
 			return False
 		if self.url_filter.contain(topic.url):
 #			print("found black url",topic.url)
@@ -153,10 +152,12 @@ class TopicProvider(object):
 		except Exception as e:
 			print("strange topic",topic.url)
 			return True
+		if topic is None:
+			return False
 		if self.user_filter.contain(topic.user_url):
 #			print("found black user",topic.user_name,"in",topic.url)
 			return False
-		if self.content_key_word_filter.contain(topic.topic_content):
+		if self.black_word_filter.contain(topic.topic_content):
 #			print("found key word in",topic.url)
 			return False
 		for white in white_word_list:
@@ -211,22 +212,27 @@ while not is_quit:
 	print("更新时间：",topic.update_time)
 	print(topic.group)
 	print("============================")
-	print("skip it(only skip in this session): s")
-	print("never see this thread again: n")
-	print("block all topic by this user: u")
-	print("quit program and save: q")
-	choose = input("enter your choose: ")
-	if choose == "s":
-		if topic.url not in url_list:
-			url_list.append(topic.url)
-	elif choose == "n":
-		provider.url_filter.append(topic.url)
-	elif choose == "u":
-		provider.user_filter.append(topic.user_url)
-	elif choose == "q":
-		is_quit = True
-	else:
-		print("wrong input and next")
+	print("SKIP it(only skip in this session): s")
+	print("never see this THREAD again: t")
+	print("block all topic by this USER: u")
+	print("QUIT program and save: q")
+	while True:
+		choose = input("enter your choose: ")
+		if choose == "s":
+			if topic.url not in url_list:
+				url_list.append(topic.url)
+			break
+		elif choose == "t":
+			provider.url_filter.append(topic.url)
+			break
+		elif choose == "u":
+			provider.user_filter.append(topic.user_url)
+			break
+		elif choose == "q":
+			is_quit = True
+			break
+		else:
+			print("wrong input")
 	print("")
 
 provider.url_filter.save()
